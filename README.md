@@ -1,30 +1,37 @@
 # ShadowBridge Proxy Aggregator
 
-ShadowBridge is a lightweight proxy aggregator for legacy e-readers. It exposes a simple HTTP API that queries multiple providers and returns normalized download results that work with `curl` and `wget`.
+ShadowBridge is a Bun/TypeScript service that aggregates search results from multiple library and forum providers, then returns normalized metadata and direct download URLs for legacy clients such as Kindle/KUAL workflows.
 
-## Features
+## What it provides
 
-- Unified `/api/search` endpoint
-- Concurrent provider aggregation with partial-failure handling
-- Normalized result schema for books and manga
-- Session persistence helper for authenticated providers
-- Randomized User-Agent selection and request timeouts
+- `GET /api/search` for unified provider search
+- concurrent aggregation with partial-failure tolerance
+- normalized `BookResult` output for books and manga
+- SQLite-backed session storage for authenticated providers
+- structured logging with request IDs and timing data
+- container-friendly runtime defaults
 
-## Requirements
+## Runtime overview
 
-- [Bun](https://bun.sh) 1.x
-- Network access to configured providers
-- Optional provider credentials for private sources
+- **Runtime**: Bun 1.x
+- **Framework**: Hono
+- **Language**: TypeScript
+- **Persistence**: SQLite via `bun:sqlite`
+- **Testing**: `bun test`
 
-## Project Structure
+## Repository layout
 
-- `src/index.ts` — API entry point
-- `src/core/` — aggregation, session, and HTTP helpers
+- `src/index.ts` — HTTP entrypoint and route definitions
+- `src/core/` — environment, aggregation, logging, session, and HTTP helpers
 - `src/providers/` — provider adapters
-- `src/types/` — shared TypeScript types
-- `tests/` — automated tests
+- `src/types/` — shared TypeScript interfaces
+- `tests/` — unit and e2e-style tests
+- `Dockerfile` — container image definition
+- `docker-compose.yml` — local container composition
+- `docs/AGENT_GUIDE.md` — maintainer and agent reference
+- `kual/` — Kindle/KUAL launcher scaffold
 
-## Setup
+## Quick start
 
 1. Install dependencies:
 
@@ -32,7 +39,7 @@ ShadowBridge is a lightweight proxy aggregator for legacy e-readers. It exposes 
    bun install
    ```
 
-2. Create a `.env` file from the example below.
+2. Configure environment variables as needed.
 
 3. Start the service:
 
@@ -42,19 +49,30 @@ ShadowBridge is a lightweight proxy aggregator for legacy e-readers. It exposes 
 
 The server listens on `http://localhost:3000` by default.
 
-## Environment Variables
+## Configuration
 
-Create a `.env` file with provider credentials when needed:
+Create a `.env` file when private providers are used:
 
 ```env
+PORT=3000
+SEARCH_TIMEOUT_MS=5000
+LOG_LEVEL=info
+
+ZLIB_BASE_URL=https://z-library.im
 ZLIB_EMAIL=your@email.com
 ZLIB_PASSWORD=yourpassword
+
+ANNAS_BASE_URL=https://annas-archive.li
+
 TVE4U_USERNAME=yourusername
 TVE4U_PASSWORD=yourpassword
-PORT=3000
 ```
 
-## API Usage
+Notes:
+- `ANNAS_BASE_URL` is optional.
+- `ZLIB_BASE_URL` and `TVE4U` credentials are used only when those providers are enabled.
+
+## API
 
 ### Search
 
@@ -68,15 +86,7 @@ Optional provider filter:
 curl "http://localhost:3000/api/search?q=The+Great+Gatsby&providers=zlib,annas"
 ```
 
-### Sessions
-
-Inspect cached session records:
-
-```bash
-curl "http://localhost:3000/api/sessions"
-```
-
-## Response Shape
+### Response shape
 
 ```json
 {
@@ -87,7 +97,51 @@ curl "http://localhost:3000/api/sessions"
 }
 ```
 
-## Kindle / KUAL Example
+Partial failures still return `200 OK` with successful results and provider error messages in `errors`.
+
+## Container usage
+
+Build and run with Docker:
+
+```bash
+docker compose up --build
+```
+
+Recommended runtime settings:
+- mount durable storage for `sessions.sqlite`
+- set `LOG_LEVEL=info` or `warn`
+- set `SEARCH_TIMEOUT_MS` conservatively for your network
+- keep provider credentials in environment variables or secret storage
+
+## Testing
+
+Run all tests:
+
+```bash
+bun test
+```
+
+Run the API e2e-focused file:
+
+```bash
+bun test tests/api.e2e.test.ts
+```
+
+Run the integration flow that searches, selects a result, and downloads the file:
+
+```bash
+bun test tests/integration.e2e.test.ts
+```
+
+Run provider-focused integration tests:
+
+```bash
+bun test tests/providers.integration.test.ts
+```
+
+The integration flow validates the full path from `/api/search` to file download handling.
+
+## Kindle / KUAL example
 
 ```bash
 QUERY="The Great Gatsby"
@@ -95,15 +149,14 @@ DOWNLOAD_URL=$(curl -s "http://YOUR_PROXY_IP:3000/api/search?q=${QUERY// /+}" | 
 wget "$DOWNLOAD_URL" -O "book.epub"
 ```
 
-## Development
+### Kindle package scaffold
 
-Run tests:
+The `kual/` directory contains a Kindle-side launcher package based on the older `KindleFetch` structure. It is intended to be copied into the Kindle `extensions` directory and wired to a backend URL through `SHADOWBRIDGE_URL`.
 
-```bash
-bun test
-```
+## Maintenance notes
 
-## Notes
-
-- This implementation is intentionally lightweight and uses in-memory session storage for local development convenience.
-- Provider adapters are stubs or demo implementations and should be wired to real endpoints before production use.
+- Keep `src/core/env.ts` as the single source of truth for environment access.
+- Avoid reintroducing `process.env` in provider or core code.
+- Keep provider auth logic inside provider modules.
+- Preserve the normalized response schema in `src/types/index.ts`.
+- Update `docs/AGENT_GUIDE.md` when runtime, deployment, or provider assumptions change.

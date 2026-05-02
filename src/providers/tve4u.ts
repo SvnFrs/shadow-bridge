@@ -69,6 +69,10 @@ export const tve4uProvider: SearchProvider = {
         xfSession = sessionDb.getToken("tve4u", "xf_session");
       }
 
+      if (!xfUser || !xfSession) {
+        return { results: [], errors: ["TVE-4U session unavailable"] };
+      }
+
       const searchUrl = `https://tve-4u.org/search/search?keywords=${encodeURIComponent(query)}`;
       const response = await httpClient(searchUrl, {
         headers: {

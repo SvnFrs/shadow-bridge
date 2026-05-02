@@ -16,15 +16,16 @@ export const madaraProvider: SearchProvider = {
   name: "madara",
   async search(query: string): Promise<ProviderSearchResult> {
     try {
-      // Madara provider expects a URL. Skip if query is not a valid URL.
-      if (!query.startsWith("http")) {
+      const results: BookResult[] = [];
+      const isUrl = query.startsWith("http");
+
+      if (!isUrl) {
         return { results: [] };
       }
 
       const response = await httpClient(query);
       const html = await response.text();
 
-      const results: BookResult[] = [];
       const imageLinksRegex = /var\s+imageLinks\s*=\s*\[(.*?)\];/s;
       const match = imageLinksRegex.exec(html);
 
@@ -58,6 +59,24 @@ export const madaraProvider: SearchProvider = {
               downloadUrl: encoded,
             });
           }
+        }
+      }
+
+      if (results.length === 0) {
+        const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/g;
+        let imgMatch: RegExpExecArray | null;
+        while ((imgMatch = imgRegex.exec(html)) !== null) {
+          const src = imgMatch[1];
+          if (!src) continue;
+          results.push({
+            id: stableId(src),
+            source: "madara",
+            title: `Manga Page ${results.length + 1}`,
+            author: "Various",
+            sizeMb: 0,
+            format: "cbz",
+            downloadUrl: src.startsWith("//") ? `https:${src}` : src,
+          });
         }
       }
 

@@ -30,4 +30,24 @@ export interface ProviderSearchResult {
 export interface SearchProvider {
   name: string;
   search: (query: string) => Promise<ProviderSearchResult>;
+  resolveDownloadUrl?: (url: string) => Promise<string | null>;
+}
+
+export interface DownloadResponse {
+  sourceUrl: string;
+  fileName: string;
+  contentType: string;
+  sizeBytes?: number;
+  status: number;
+}
+
+export interface IntegrationTestResult {
+  query: string;
+  searchStatus: number;
+  totalResults: number;
+  selectedDownloadUrl: string;
+  downloadStatus: number;
+  fileName: string;
+  contentType: string;
+  bytesDownloaded: number;
 }

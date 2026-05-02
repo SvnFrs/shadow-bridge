@@ -22,7 +22,11 @@ export const aggregateSearch = async (
       if (item.value.errors) {
         errors.push(...item.value.errors.map(err => `${providerName}: ${err}`));
       }
-      log("info", "provider search complete", { provider: providerName, query });
+      log("info", "provider search complete", { 
+        provider: providerName, 
+        query, 
+        results: item.value.results.length 
+      });
     } else {
       const message = getErrorMessage(item.reason);
       errors.push(`${providerName}: ${message}`);

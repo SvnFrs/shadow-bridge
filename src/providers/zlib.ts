@@ -40,7 +40,9 @@ const ZLIB_MIRRORS = [
   "https://z-library.im",
   "https://z-lib.sk",
   "https://1lib.sk",
-  "https://z-lib.gl"
+  "https://z-lib.gl",
+  "https://z-lib.gd",
+  "https://z-lib.io",
 ];
 
 export const zlibProvider: SearchProvider = {
@@ -70,7 +72,7 @@ export const zlibProvider: SearchProvider = {
           method: "POST",
           body: new URLSearchParams({
             message: query,
-            limit: "20",
+            limit: "50",
           }),
           headers: {
             "X-App-Version": "2.5.1",
@@ -97,6 +99,23 @@ export const zlibProvider: SearchProvider = {
           format: (book.extension || "unknown") as FileType,
           downloadUrl: `${baseUrl}/eapi/book/${book.id}/${book.hash}/file`,
         }));
+
+        if (results.length === 0 && Array.isArray(data.result)) {
+          const fallbackResults: BookResult[] = data.result.map((book: any) => ({
+            id: String(book.id ?? book.md5 ?? book.hash ?? crypto.randomUUID()),
+            source: "zlib",
+            title: book.title ?? "Untitled",
+            author: book.author ?? "Unknown",
+            sizeMb: Number(book.filesize ? (Number(book.filesize) / (1024 * 1024)).toFixed(2) : 0),
+            format: (book.extension || "unknown") as FileType,
+            downloadUrl: `${baseUrl}/eapi/book/${book.id}/${book.hash}/file`,
+          }));
+
+          if (fallbackResults.length > 0) {
+            log("warn", "zlib used fallback result shape", { provider: "zlib", query });
+            return { results: fallbackResults };
+          }
+        }
 
         log("info", "zlib search completed", { provider: "zlib", query });
         return { results };

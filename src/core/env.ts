@@ -24,7 +24,7 @@ const numberValue = (key: string, fallback: number): number => {
 
 export const env: AppEnv = {
   port: numberValue("PORT", 3000),
-  searchTimeoutMs: numberValue("SEARCH_TIMEOUT_MS", 5000),
+  searchTimeoutMs: numberValue("SEARCH_TIMEOUT_MS", 15000),
   logLevel: envValue("LOG_LEVEL") ?? "info",
   zlibBaseUrl: envValue("ZLIB_BASE_URL"),
   zlibEmail: envValue("ZLIB_EMAIL"),

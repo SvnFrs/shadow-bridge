@@ -23,9 +23,7 @@ export class SessionDb {
   setToken(provider: string, key: string, value: string): void {
     db.run(
       "INSERT INTO sessions (provider, key, value, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT(provider, key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP",
-      provider,
-      key,
-      value
+      [provider, key, value]
     );
   }
 
@@ -38,7 +36,7 @@ export class SessionDb {
   }
 
   clearProvider(provider: string): void {
-    db.run("DELETE FROM sessions WHERE provider = ?", provider);
+    db.run("DELETE FROM sessions WHERE provider = ?", [provider]);
   }
 }
 
