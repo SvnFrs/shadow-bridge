@@ -1,0 +1,16 @@
+{
+  "name": "shadow-bridge-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "start": "bun src/index.ts",
+    "test": "bun test",
+    "test:e2e": "bun test tests/api.e2e.test.ts"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "hono": "^4.6.10"
+  }
+}
